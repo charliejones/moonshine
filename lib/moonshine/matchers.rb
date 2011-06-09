@@ -52,12 +52,15 @@ module Moonshine
         if expected.length > resources.length
           false
         else
+          result = true
           expected.each do |expected_resource|
-            result &&= resources.flatten.detect do |actual_resource|
+            matching_resource = resources.flatten.detect do |actual_resource|
               actual_resource.type == expected_resource.type &&
               actual_resource.title == expected_resource.title
             end
+            result &&= !!matching_resource
           end
+          result
         end
       end
 

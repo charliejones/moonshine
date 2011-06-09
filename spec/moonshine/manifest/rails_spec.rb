@@ -506,6 +506,29 @@ describe Moonshine::Manifest::Rails do
       @manifest.rails_rake_environment
       @manifest.should have_package('rake').version('1.2.3')
     end
+
+    it "provides a helper to call rake that depends on rake environment" do
+      @manifest.rails_rake_environment
+      @manifest.send(:rake, 'foo')
+      @manifest.should exec_command('rake foo')
+      @manifest.execs['rake foo'].should require_resource(@manifest.exec('rake tasks'))
+      @manifest.execs['rake tasks'].should require_resource([@manifest.exec('rails_gems'), @manifest.package('rake')])
+      # no circular dependency
+      @manifest.execs['rake tasks'].should_not require_resource(@manifest.exec('rake tasks'))
+    end
+
+    context 'with bundler' do
+      before do
+        @manifest.should_receive(:using_bundler?).at_least(:once).and_return(true)
+      end
+
+      it 'uses generated binstubs for all rake commands' do
+        @manifest.rails_rake_environment
+        @manifest.send(:rake, 'foo')
+        @manifest.should exec_command("#{@manifest.rails_root}/bin/rake foo")
+        @manifest.should exec_command("#{@manifest.rails_root}/bin/rake environment")
+      end
+    end
   end
 
 end
